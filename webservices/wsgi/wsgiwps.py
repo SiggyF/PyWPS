@@ -13,7 +13,7 @@ PyWPS wsgi script
 """
 
 # Author:	Jachym Cepicky
-#        	http://les-ejk.cz
+#               http://les-ejk.cz
 # License:
 #
 # Web Processing Service implementation
@@ -32,9 +32,6 @@ PyWPS wsgi script
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
-import sys
-
-sys.path.append("/home/jachym/usr/src/pywps/trunk/")
 
 import pywps
 from pywps.Exceptions import *
