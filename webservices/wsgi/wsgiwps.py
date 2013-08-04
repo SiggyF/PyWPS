@@ -61,9 +61,9 @@ def dispatchWps(environ, start_response):
             wps.performRequest()
             return wps.response
     except WPSException,e:
-        return [e]
+        return [e.getResponse()]
     except Exception, e:
-        return [e]
+        return [e.getResponse()]
 
 
 if __name__ == '__main__':
