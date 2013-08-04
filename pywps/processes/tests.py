@@ -51,7 +51,7 @@ class LiteralProcess(WPSProcess):
         self.floatOut = self.addLiteralOutput(identifier="float",
                                                  title="Float data out",
                                                  type = type(0.0))
-        
+
         self.boolOut = self.addLiteralOutput(identifier="bool",
                                                  title="Boolean data out",
                                                  type = type(False))
@@ -59,7 +59,7 @@ class LiteralProcess(WPSProcess):
         self.intOut.setValue(self.intIn.getValue())
         self.stringOut.setValue(self.stringIn.getValue())
         self.floatOut.setValue(self.floatIn.getValue())
-        
+
         self.boolOut.setValue(self.boolIn.getValue())
 
 class ComplexProcess(WPSProcess):
@@ -91,7 +91,7 @@ class ComplexProcess(WPSProcess):
                                                  title="Raster file",
                                                  formats = [{"mimeType":"image/tiff"}])
     def execute(self):
-        
+
         self.vectorout.setValue(self.vectorin.getValue())
         self.rasterout.setValue(self.rasterin.getValue())
         if self.pausein.getValue():
@@ -112,15 +112,15 @@ class BBoxProcess(WPSProcess):
 
     def execute(self):
         self.bboxout.setValue(self.bboxin.value.coords)
-        
+
 class BBoxProcess3D(WPSProcess):
     """This process defines bounding box in- and outputs"""
 
     def __init__(self):
         WPSProcess.__init__(self, identifier = "bboxprocess3D",title="BBox process",storeSupported=True, statusSupported=True)
 
-        self.bboxin = self.addBBoxInput(identifier="bboxin",title="BBox in",crs=['EPSG:5714'],dimensions=2)
-        self.bboxout = self.addBBoxOutput(identifier="bboxout",title="BBox out",crs=['EPSG:5714'],dimensions=2)
+        self.bboxin = self.addBBoxInput(identifier="bboxin",title="BBox in",crss=['EPSG:5714'],dimensions=2)
+        self.bboxout = self.addBBoxOutput(identifier="bboxout",title="BBox out",crss=['EPSG:5714'],dimensions=2)
 
     def execute(self):
         self.bboxout.setValue(self.bboxin.value.coords)

@@ -4,7 +4,7 @@ Process
 Package for creating (Py)WPS Process classes
 """
 # Author:	Jachym Cepicky
-#        	http://les-ejk.cz
+#               http://les-ejk.cz
 # Lince:
 #
 # Web Processing Service implementation
@@ -37,20 +37,20 @@ import traceback
 class Status:
     """Status object for each process
 
-    .. attribute:: creationTime 
-    
+    .. attribute:: creationTime
+
         :func:`time.time()`
 
-    .. attribute:: code 
-    
+    .. attribute:: code
+
         "processstarted", "processfailed" or anything else
 
-    .. attribute:: percentCompleted 
-    
+    .. attribute:: percentCompleted
+
         how far the calculation is
 
-    .. attribute:: value 
-            
+    .. attribute:: value
+
         message string to the client
     """
     creationTime = time.time()
@@ -71,7 +71,7 @@ class Status:
         """
         self.code = "processstarted"
         #percentageDone has to be int. The trick below will cast str-->float-->int
-        
+
         self.percentCompleted=int(float(percentDone))
         #if (type(percentDone) == types.StringType):
         #    self.percentCompleted += int(percentDone)
@@ -121,7 +121,7 @@ class WPSProcess:
     :param metadata: List of additional metadata references. See http://www.opengeospatial.org/standards/common, table 32 on page 65, http://schemas.opengis.net/xlink/1.0.0/xlinks.xsd
 
            Example::
-            
+
                 [
                     {
                      "title": "Title",
@@ -145,25 +145,25 @@ class WPSProcess:
             GRASS environment will be started.
 
     .. attribute:: identifier
-    
+
         Process identifier
-        
+
     .. attribute:: version
-    
+
         Process version
-        
+
     .. attribute:: metadata
-    
+
         List of references to metadata resources
-        
+
     .. attribute:: title
-        
-        Process title 
-        
+
+        Process title
+
     .. attribute:: abstract
-    
+
         Process abstract
-        
+
     .. attribute:: wsdl
 
         Not implemented
@@ -182,7 +182,7 @@ class WPSProcess:
         Indicates, whether assynchronous running of the process is possible
 
     .. attribute:: debug
-        
+
         Print some information to log file
 
     .. attribute:: status
@@ -221,13 +221,13 @@ class WPSProcess:
             with existing PERMANENT mapset, where your Process can take
             input data from (or store results to). Temporary mapset within
             this location is created.
-    
+
     .. attribute:: logFile
 
         File object, where to print log in.
 
     .. attribute:: pywps
-    
+
         copy of the :class:`pywps.Pywps` instance
 
     """
@@ -279,9 +279,9 @@ class WPSProcess:
                 statusSupported = False
         self.statusSupported = statusSupported
 
-	# status not supported on windows
-	if os.name == "nt":
-		self.statusSupported = False
+        # status not supported on windows
+        if os.name == "nt":
+                self.statusSupported = False
 
         self.debug = False
 
@@ -331,7 +331,7 @@ class WPSProcess:
 
         :param identifier: input identifier
         :param title: input title
-        :param abstract: input description. 
+        :param abstract: input description.
         :param uoms: List of value units
         :type uoms: [string]
         :param minOccurs: minimum number of occurrences, default 1
@@ -355,7 +355,7 @@ class WPSProcess:
         :param metadata: List of additional metadata references. See http://www.opengeospatial.org/standards/common, table 32 on page 65, http://schemas.opengis.net/xlink/1.0.0/xlinks.xsd
 
             Example::
-                
+
                     [
                         {
                         "title": "Title",
@@ -363,7 +363,7 @@ class WPSProcess:
                         ... : ...
                         }
                     ]
-        
+
             default: None
 
         :returns: :class:`pywps.Process.InAndOutputs.LiteralInput`
@@ -383,11 +383,11 @@ class WPSProcess:
 
         :param identifier: input identifier
         :param title: input title
-        :param abstract: input description. 
+        :param abstract: input description.
         :param minOccurs: minimum number of occurrences, default 1
         :param maxOccurs: maximum number of occurrences, default 1
         :param formats: List of dictionary according to table 23 (page 25)
-            OGC WPS. 
+            OGC WPS.
 
             Example::
 
@@ -406,7 +406,7 @@ class WPSProcess:
         :param metadata: List of additional metadata references. See http://www.opengeospatial.org/standards/common, table 32 on page 65, http://schemas.opengis.net/xlink/1.0.0/xlinks.xsd
 
             Example::
-                
+
                     [
                         {
                         "title": "Title",
@@ -416,7 +416,7 @@ class WPSProcess:
                     ]
 
             default: None
-        
+
         :returns: :class:`pywps.Process.InAndOutputs.ComplexInput`
         """
 
@@ -430,7 +430,7 @@ class WPSProcess:
 
     def addBBoxInput(self,identifier,title,abstract=None,
                 metadata=[],minOccurs=1,maxOccurs=1,
-                crss=["EPSG:4326"]):
+                crss=["EPSG:4326"], dimensions=None):
         """Add BoundingBox input
 
         :param identifier: input identifier
@@ -447,11 +447,14 @@ class WPSProcess:
         :type maxOccurs: integer
         :param crss: of supported coordinate systems.
         :type crss: list
+        :param dimensions: bbox dimensions
+        :type dimensions: integer
         :returns: :class:`pywps.Process.InAndOutputs.BoundingBoxInput`
+
         """
         self.inputs[identifier] = InAndOutputs.BoundingBoxInput(identifier,
                 title, abstract=abstract, metadata=metadata,
-                minOccurs=minOccurs, maxOccurs=maxOccurs, crss=crss)
+                minOccurs=minOccurs, maxOccurs=maxOccurs, crss=crss, dimensions=dimensions)
 
         return self.inputs[identifier]
 
@@ -467,7 +470,7 @@ class WPSProcess:
         :param metadata: List of additional metadata references. See http://www.opengeospatial.org/standards/common, table 32 on page 65, http://schemas.opengis.net/xlink/1.0.0/xlinks.xsd
 
             Example::
-                
+
                     [
                         {
                         "title": "Title",
@@ -480,9 +483,9 @@ class WPSProcess:
 
         :param formats: List of dictionaries according to table 23 (page
             25) of the standard
-            
+
             ::
-        
+
                     [
                         {"mimeType": "image/tiff"},
                         {
@@ -509,7 +512,7 @@ class WPSProcess:
 
         :param identifier: input identifier
         :param title: input title
-        :param abstract: input description. 
+        :param abstract: input description.
         :param uoms: List of string  value units
         :param type: :class:`types.TypeType` value type, e.g. Integer, String, etc. you
                     can uses the :mod:`types` module of python.
@@ -527,7 +530,7 @@ class WPSProcess:
         return self.outputs[identifier]
 
     def addBBoxOutput(self, identifier, title, abstract=None,
-            crs="EPSG:4326", dimensions=2,asReference=False):
+            crss=["EPSG:4326"], dimensions=2,asReference=False):
         """Add new output item of type BoundingBoxValue to this process
 
         :param identifier: input identifier
@@ -540,7 +543,7 @@ class WPSProcess:
         """
 
         self.outputs[identifier] = InAndOutputs.BoundingBoxOutput(identifier=identifier,
-                title=title, abstract=abstract, crss=[crs], dimensions=dimensions,asReference=asReference)
+                title=title, abstract=abstract, crss=crss, dimensions=dimensions,asReference=asReference)
 
         return self.outputs[identifier]
 
@@ -681,6 +684,6 @@ class WPSProcess:
     def execute(self):
         """This method will be called by :class:`pywps.Wps.Execute.Execute`. Please
         redefine this in your process instance
-        
+
         :returns: None if succeeded, error message otherwise."""
         pass
