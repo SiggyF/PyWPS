@@ -36,7 +36,7 @@ PyWPS wsgi script
 import pywps
 from pywps.Exceptions import *
 
-def dispatchWps(environ, start_response):
+def application(environ, start_response):
 
     status = '200 OK'
     response_headers = [('Content-type','text/xml')]
