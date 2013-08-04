@@ -70,14 +70,16 @@ if __name__ == '__main__':
 
     import os
 
-    # import processes from the tests directory
-    os.environ["PYWPS_PROCESSES"] =  os.path.join(
-            os.path.split(
-                os.path.dirname(
-                    pywps.__file__
-            )
-        )[0],"tests","processes")
+    # If process directory is not configured
+    if "PYWPS_PROCESSES" not in os.environ:
+        # import processes from the tests directory
+        os.environ["PYWPS_PROCESSES"] =  os.path.join(
+                os.path.split(
+                    os.path.dirname(
+                        pywps.__file__
+                )
+            )[0],"tests","processes")
 
     from wsgiref.simple_server import make_server
-    srv = make_server('localhost', 8081, dispatchWps)
+    srv = make_server('localhost', 8081, application)
     srv.serve_forever()
