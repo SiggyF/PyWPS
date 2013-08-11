@@ -5,7 +5,7 @@
 
 """
 # Author:	Jachym Cepicky
-#        	http://les-ejk.cz
+#               http://les-ejk.cz
 #               jachym at les-ejk dot cz
 # License:
 #
@@ -52,6 +52,8 @@ from xml.sax.saxutils import escape
 
 TEMPDIRPREFIX="pywps-instance"
 
+# TODO, cleanup exception handling, always make sure we have a traceback...
+
 #Note: saxutils to escape &,< and > from URLs. Applied to _lineageComplexRerenceInput,_asReferenceOutput. in the last case
 # it as been applied to ALL references, just as precausion
 
@@ -65,7 +67,7 @@ class Execute(Request):
     .. attribute :: accepted
 
         Process accepted indicator string
-        
+
     .. attribute :: started
 
         Process started indicator string
@@ -125,9 +127,9 @@ class Execute(Request):
         :attr:`processstarted`, :attr:`processsucceeded`, :attr:`processfailed`
 
     .. attribute :: statusMessage
-        
+
         Text message or comment to particular status
-        
+
     .. attribute :: percent
 
         Percent done
@@ -142,7 +144,7 @@ class Execute(Request):
 
     .. attribute :: statusTime
 
-        current status time 
+        current status time
 
     .. attribute :: dirsToBeRemoved
 
@@ -165,7 +167,7 @@ class Execute(Request):
     .. attribute :: umn
 
         :class:`pywps.UMN.UMN`
-        
+
         UMN MapServer - mapscript handler
 
     .. attribute :: spawned
@@ -218,7 +220,7 @@ class Execute(Request):
 
     umn = None
 
- 
+
 
     def __init__(self,wps, processes=None, spawned=False):
 
@@ -233,7 +235,7 @@ class Execute(Request):
         self.status = None
         self.spawned = spawned
         self.outputFileName = os.path.join(config.getConfigValue("server","outputPath"),self.getSessionId()+".xml")
-    
+
 
         # rawDataOutput
         if len(self.wps.inputs["responseform"]["rawdataoutput"])>0:
@@ -249,12 +251,12 @@ class Execute(Request):
         self.storeRequired = False
         if self.wps.inputs["responseform"]["responsedocument"].has_key("storeexecuteresponse"):
             if self.wps.inputs["responseform"]["responsedocument"]["storeexecuteresponse"]:
-                outputType = "file" 
+                outputType = "file"
                 outputPath = config.getConfigValue("server","outputPath")
                 # Check for ftp storage
                 if string.find(outputPath.lower(), "ftp://", 0, 6) == 0:
                     outputType = "ftp"
-                    
+
                 if outputType == "file":
                     try:
                         self.outputFile = open(self.outputFileName,"w")
@@ -263,9 +265,9 @@ class Execute(Request):
                         self.cleanEnv()
                         raise pywps.NoApplicableCode(e.__str__())
                 # Set up the response document ftp object
-                
+
                 elif outputType == "ftp":
-                    
+
                     try:
                         ftpHost = outputPath[6:]
                         ftplogin = config.getConfigValue("server","ftplogin")
@@ -323,18 +325,18 @@ class Execute(Request):
             self.cleanEnv()
             raise pywps.InvalidParameterValue(
                 "status is true, but storeExecuteResponse is false")
-      
+
        #check storeExecuteResponse agains asReference=true
         if not self.process.storeSupported and "outputs" in self.wps.inputs["responseform"]["responsedocument"]:
            #check the array for asreference': True
                if len([item for item in  self.wps.inputs["responseform"]["responsedocument"]["outputs"] if ("asreference" in item and item["asreference"]==True) ]):
                    self.cleanEnv()
                    raise pywps.InvalidParameterValue("storeExecuteResponse is false, but output(s) are requested as reference(s)")
-           
-        
-            
+
+
+
         # HEAD
-       
+
         self.templateProcessor.set("encoding",
                                     config.getConfigValue("wps","encoding"))
         self.templateProcessor.set("lang",
@@ -368,7 +370,7 @@ class Execute(Request):
             self.outputFile.name
             subprocess.Popen([sys.executable,__file__,
                 os.path.join(tmpPath, self.__pickleFileName+"-"+str(self.wps.UUID)),self.outputFile.name],
-                stdout=subprocess.PIPE, 
+                stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE)
             logging.info("This is parent process, end.")
 
@@ -421,7 +423,7 @@ class Execute(Request):
                 if not self.rawDataOutput:
                     # fill outputs
                     self.processOutputs()
-                    
+
                     #if self.umn:
                     #    self.umn.save()
 
@@ -506,12 +508,12 @@ class Execute(Request):
                     (identifier, self.process.identifier))
 
             input = self.process.inputs[identifier]
-            
+
             # exceptions handler
             input.onProblem = self.onInputProblem
             # maximum input file size must not be greater, than the one,
             # defined in the global config file
-            
+
             if input.type == "ComplexValue":
                 #if maxfile == 0 then we have no limits
                 if maxFileSize==0:
@@ -527,9 +529,9 @@ class Execute(Request):
                         if unicode(inp["identifier"]) == unicode(identifier):
                              #In complexValue trying to set the mimeType from user definition
                             # --> cant be here
-                            if input.type == "ComplexValue": 
+                            if input.type == "ComplexValue":
                                 input.setMimeType(inp)
-                            
+
                             #Passing value/content
                             resp = input.setValue(inp)
                             if resp:
@@ -574,33 +576,33 @@ class Execute(Request):
                         "format" in poutputList:
                         if respOut["schema"] != '':
                             poutput.format["schema"] = respOut["schema"]
-                   
+
                     # encoding
                     if respOut.has_key("encoding") and \
                         "format" in poutputList:
                         if respOut["encoding"] != '':
                             poutput.format["encoding"] = respOut["encoding"]
-                    
+
                     # uom
                     if respOut.has_key("uom") and \
                         "uom" in poutputList:
                         if respOut["uom"] != '':
                             poutput.uom = respOut["uom"]
-                     
+
         #Even if the document response is not set
         #self.format has to be created and filled
         #Checking/resetting mimetype
         #poutput --> ComplexOutputObject
         for identifier in self.process.outputs:
-            
+
             poutput = self.process.outputs[identifier]
             if poutput.type == "ComplexValue":
                 #Only None if information is lacking
                 [poutput.format.__setitem__(missing,None) for missing in [item for item in ("mimetype","schema","encoding") if item not in poutput.format.keys()]]
                 poutput.checkMimeTypeIn()
-                
-              
-                    
+
+
+
 
     def onInputProblem(self,what,why):
         """This method is used for rewriting onProblem method of each input
@@ -617,10 +619,10 @@ class Execute(Request):
             exception = pywps.NoApplicableCode
         elif what == "InvalidParameterValue":
             exception = pywps.InvalidParameterValue
-        
+
         self.cleanEnv()
         raise exception(why)
-    
+
     def onOutputProblem(self,what,why):
         """This method logs the existance of problens in the complexData mainly (output mimeType?)
         :param what: locator of the problem
@@ -634,11 +636,11 @@ class Execute(Request):
             exception = pywps.NoApplicableCode
         elif what == "InvalidParameterValue":
             exception = pywps.InvalidParameterValue
-        
+
         self.cleanEnv()
         raise exception(why)
-    
-    
+
+
     def executeProcess(self):
         """Calls 'execute' method of the process, catches possible exceptions
         and set process failed or succeeded
@@ -707,7 +709,7 @@ class Execute(Request):
         self.statusTime = time.localtime()
         self.templateProcessor.set("statustime", time.strftime('%Y-%m-%dT%H:%M:%SZ', self.statusTime))
         self.status = status
-        
+
         if statusMessage != 0: self.statusMessage = statusMessage
         if percent != 0: self.percent = percent
         if exceptioncode != 0: self.exceptioncode = exceptioncode
@@ -783,11 +785,11 @@ class Execute(Request):
 
                 templateInput = {}
                 wpsInput["lineaged"] = True
-                
+
                 templateInput["identifier"] = input.identifier
                 templateInput["title"] = self.process.i18n(input.title)
                 templateInput["abstract"] = self.process.i18n(input.abstract)
-                
+
                 if input.type == "LiteralValue":
                     templateInput = self._lineageLiteralInput(input,wpsInput,templateInput)
                 elif input.type == "ComplexValue" and \
@@ -812,13 +814,13 @@ class Execute(Request):
     def _lineageComplexInput(self, wpsInput,complexInput):
         """ Fill input of complex data
         """
-       
+
         #complexInput needs to be replicated
         complexInput["encoding"]=wpsInput["encoding"]
         complexInput["mimetype"]=wpsInput["mimetype"]
         complexInput["schema"]=wpsInput["schema"]
         complexInput["complexdata"]=wpsInput["value"]
-        
+
         return complexInput
 
     def _lineageComplexReferenceInput(self, wpsInput, processInput, complexInput):
@@ -847,11 +849,11 @@ class Execute(Request):
 
     def _lineageBBoxInput(self,input,bboxInput):
         """ Fill input of bbox data """
-        
+
         bboxInput["bboxdata"] = 1
         bboxInput["crs"] = input.value.crs
         bboxInput["dimensions"] = input.value.dimensions
-       
+
         #((minx,miny),(maxx, maxy))
         bboxInput["minx"] = input.value.coords[0][0]
         bboxInput["miny"] = input.value.coords[0][1]
@@ -865,7 +867,7 @@ class Execute(Request):
         """
         templateOutputs = []
         outputsRequested=self.getRequestedOutputs()
-        
+
         for identifier in outputsRequested:
             templateOutput = {}
             output = self.process.outputs[identifier]
@@ -873,7 +875,7 @@ class Execute(Request):
             templateOutput["identifier"] = output.identifier
             templateOutput["title"] = self.process.i18n(output.title)
             templateOutput["abstract"] = self.process.i18n(output.abstract)
-            
+
             if self.process.storeSupported and output.asReference:
                 templateOutput["asreference"] = "true"
             else:
@@ -889,18 +891,18 @@ class Execute(Request):
                 templateOutput["complexdata"] = 1
             else:
                 templateOutput = self._lineageBBoxOutput(output,templateOutput)
-                templateOutput["bboxdata"] = 1   
+                templateOutput["bboxdata"] = 1
         self.templateProcessor.set("Outputdefinitions",templateOutputs)
 
     def _lineageLiteralOutput(self, output, literalOutput):
-        
+
         if len(output.uoms):
                 literalOutput["uom"] = output.uoms[0]
         return literalOutput
 
     def _lineageComplexOutput(self, output, complexOutput):
-        
-         #Checks for the correct output and logs 
+
+         #Checks for the correct output and logs
         self.checkMimeTypeOutput(output)
         complexOutput["mimetype"] = output.format["mimetype"]
         complexOutput["encoding"] = output.format["encoding"]
@@ -908,7 +910,7 @@ class Execute(Request):
         return complexOutput
 
     def _lineageBBoxOutput(self, output, bboxOutput):
-        
+
         bboxOutput["bboxdata"] = 1
         bboxOutput["crs"] = output.crs
         bboxOutput["dimensions"] = output.dimensions
@@ -920,14 +922,14 @@ class Execute(Request):
         returning a list of ouputs that need to be present in the XML response document
         """
         outputsRequested=[]
-       
+
         try:#Sometimes the responsedocument maybe empty, if so the  code will use outputsRequested=self.process.outputs.keys()
             for output in self.wps.inputs["responseform"]["responsedocument"]["outputs"]:
                 outputsRequested.append(output["identifier"])
         except Exception,e:
             pass
-         
-        #If no ouputs request is present then dump everything: Table 39 WPS 1.0.0 document    
+
+        #If no ouputs request is present then dump everything: Table 39 WPS 1.0.0 document
         if outputsRequested==[]:
             outputsRequested=self.process.outputs.keys()
         return outputsRequested
@@ -941,8 +943,8 @@ class Execute(Request):
 
         templateOutputs = []
         outputsRequested=self.getRequestedOutputs()
-        
-        
+
+
         for identifier in outputsRequested:
         #for identifier in self.process.outputs.keys():
             try:
@@ -962,7 +964,7 @@ class Execute(Request):
                     templateOutput["reference"] = 0
                     if output.type == "LiteralValue":
                         templateOutput = self._literalOutput(output,templateOutput)
-       
+
                     elif output.type == "ComplexValue":
                             templateOutput = self._complexOutput(output,templateOutput)
                     elif output.type == "BoundingBoxValue":
@@ -991,14 +993,14 @@ class Execute(Request):
         return literalOutput
 
     def _complexOutput(self, output, complexOutput):
-        
-        #Checks for the correct output and logs 
+
+        #Checks for the correct output and logs
         self.checkMimeTypeOutput(output)
-       
+
         complexOutput["mimetype"] = output.format["mimetype"]
         complexOutput["encoding"] = output.format["encoding"]
         complexOutput["schema"] = output.format["schema"]
-       
+
         if output.format["mimetype"] is not None:
         # CDATA section in output
             #attention to application/xml
@@ -1006,8 +1008,8 @@ class Execute(Request):
             #complexOutput["cdata"] = 1
                 os.rename(output.value, output.value+".binary")
                 base64.encode(open(output.value+".binary"),open(output.value,"w"))
-            
-        
+
+
         # set output value
         complexOutput["complexdata"] = open(output.value,"r").read()
 
@@ -1017,8 +1019,8 @@ class Execute(Request):
         if output.format["mimetype"] is not None:
             if output.format["mimetype"].find("xml") > -1:
                 beginXMLidx=complexOutput["complexdata"].find("?>")
-                #All <?xml..?> will be beginXMLidx + 2 
-                
+                #All <?xml..?> will be beginXMLidx + 2
+
                 #beginXml = complexOutput["complexdata"].split("\n")[0]
                 if beginXMLidx > -1:
                     complexOutput["complexdata"] = complexOutput["complexdata"].replace(complexOutput["complexdata"][:(beginXMLidx+2)],"")
@@ -1040,7 +1042,7 @@ class Execute(Request):
         """The method sends a file located at filePath to a FTP server with url ftpURL using ftplogin and ftppasswd as authentification.
             The vairiable fileName is the name of the file on the ftp server.
         """
-       
+
         ftp =  pywps.Ftp.FTP(ftpURL, ftpPort)
         ftp.login(ftpLogin, ftpPasswd)
         file = open(filePath, "r")
@@ -1056,9 +1058,9 @@ class Execute(Request):
         # Check if ftp or file storage is set in the configfile
         if string.find(outputPath.lower(), "ftp://", 0, 6) == 0:
             outputType = "ftp"
- 
+
         # search for ftp identifier in string in outputPath and get the ftp login and password
-        # TODO: Check if login or password are set, in case they are empty, anonymous is 
+        # TODO: Check if login or password are set, in case they are empty, anonymous is
         # used as default
         if outputType == "ftp":
             try:
@@ -1067,12 +1069,12 @@ class Execute(Request):
                 try:
                     ftpPort=config.getConfigValue("server","ftpport")
                 except:
-                    ftpPort=21    
+                    ftpPort=21
             except Exception, e:
                 traceback.print_exc(file=pywps.logFile)
                 self.cleanEnv()
                 raise pywps.NoApplicableCode("FTP error: " +  e.__str__())
-                
+
             ftpURL= outputPath[6:]
 
             # copy the file to output directory or send it to an ftp server
@@ -1097,7 +1099,7 @@ class Execute(Request):
                         logging.debug("Problems generating the BBOX XML content asReference")
                         traceback.print_exc(file=pywps.logFile)
                 if outputType == "ftp":
-                    
+
                     tmpFileName = "%s-%s" % (output.identifier,self.wps.UUID)
                     f = open(tmpFileName,"w")
                     f.write(str(output.value))
@@ -1110,7 +1112,7 @@ class Execute(Request):
                     f.write(str(output.value))
                     f.close()
                     templateOutput["reference"] = escape(config.getConfigValue("server","outputUrl")+"/" +os.path.basename(tmpFileName))
-                
+
             # complex value
         else:
                 outSuffix = os.path.splitext(os.path.basename(output.value))[1]
@@ -1120,7 +1122,7 @@ class Execute(Request):
                 else:
                     tmpFileName=os.path.join(os.path.join(config.getConfigValue("server","outputPath")),"%s-%s%s" % (output.identifier,self.wps.UUID,outSuffix))
 
-                
+
                 outFile = tmpFileName
                 outName = os.path.basename(tmpFileName)
                 if outputType == "ftp":
@@ -1129,33 +1131,33 @@ class Execute(Request):
                     COPY(os.path.abspath(output.value), outFile)
                 elif not self._samefile(output.value,outFile):
                     COPY(os.path.abspath(output.value), outFile)
-                
+
                 #If ftp then the path to file is the outputpath otherwise it has to be the outputURL
                 if outputType == "ftp":
                     templateOutput["reference"] = escape(config.getConfigValue("server","outputPath")+"/"+outName)
                 else:
-                    templateOutput["reference"] = escape(config.getConfigValue("server","outputUrl")+"/"+outName)    
-                
+                    templateOutput["reference"] = escape(config.getConfigValue("server","outputUrl")+"/"+outName)
+
                 output.value = outFile
 
                 # mapscript supported and the mapserver should be used for this
                 # output
-                # redefine the output 
-                
+                # redefine the output
+
                 #Mapserver needs the format information, therefore checkMimeType has to be called before
                 self.checkMimeTypeOutput(output)
-                
+
                 if self.umn and output.useMapscript:
                     owsreference = self.umn.getReference(output)
                     self.umn.save()
                     if owsreference:
                         templateOutput["reference"] = escape(owsreference)
 
-                
+
                 templateOutput["mimetype"] = output.format["mimetype"]
                 templateOutput["schema"] = output.format["schema"]
                 templateOutput["encoding"]=output.format["encoding"]
-      
+
 
         return templateOutput
 
@@ -1177,7 +1179,7 @@ class Execute(Request):
         if mimeType is not in the list defined by the user then it will log it as an error, no further action will be taken
         Mainly used by: _asReferenceOutput,_complexOutput,_lineageComplexOutput,_lineageComplexReference
         Note: checkMimeTypeIn will set the output's format from the first time, if the user doesnt define an outputmimetype,
-        we'll use the first one in the list (set by CheckMimeTypeIn), the mimeType will then be validate using ligmagic 
+        we'll use the first one in the list (set by CheckMimeTypeIn), the mimeType will then be validate using ligmagic
             """
             ######## TESTING CODE #############
             #mimeType=output.ms.file(output.value).split(';')[0]
@@ -1194,7 +1196,7 @@ class Execute(Request):
             #    else:
             #         logging.debug("ComplexOut %s has libMagic mimeType: %s but its format is %s (not in output list)" % (output.identifier,mimeType,output.format["mimetype"]))
             #         raise pywps.InvalidParameterValue(output.identifier)
-     
+
             #return
             try: # problem with exceptions ?!
                 mimeType=output.ms.file(output.value).split(';')[0]
@@ -1208,7 +1210,7 @@ class Execute(Request):
                 pass
 
 
-                    
+
     def getSessionId(self):
         """ Returns unique Execute session ID
 
@@ -1312,7 +1314,7 @@ class Execute(Request):
     def cleanEnv(self):
         """ Removes temporary created files and dictionaries
         """
-        
+
         os.chdir(self.curdir)
         def onError(*args):
             logging.error("Could not remove temporary dir")
@@ -1329,7 +1331,7 @@ class Execute(Request):
                 os.remove(os.path.join(tmpPath, self.__pickleFileName+"-"+self.wps.UUID))
             except Exception, e:
                 logging.debug(str(e))
-                    
+
 
 
     def calculateMaxInputSize(self):
@@ -1356,7 +1358,7 @@ class Execute(Request):
         return size
 
     def setRawData(self):
-        """Sets response and contentType 
+        """Sets response and contentType
         """
 
         output = self.process.outputs[self.rawDataOutput]
@@ -1376,10 +1378,10 @@ class Execute(Request):
             if not self._samefile(output.value,outFile):
                 COPY(os.path.abspath(output.value), outFile)
 
-            #check 
+            #check
             self.contentType = output.format["mimetype"]
             self.response = open(outFile,"rb")
-        
+
 """
 Initialize Execute method with existing WPS instance
 
@@ -1390,11 +1392,11 @@ if __name__ == "__main__":
     if len(sys.argv) and os.path.exists(sys.argv[1]):
         wps = pickle.load(open(sys.argv[1]))
         wps.setLogFile()
-            
+
         logging.info("Spawn process started, continuting to execute the process")
         # fix some inputs
         wps.inputs["responseform"]["responsedocument"]["status"] = False
-            
+
         # create Execute instance, that's all
         if isinstance(wps,pywps.Pywps):
             try:
