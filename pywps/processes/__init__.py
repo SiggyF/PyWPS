@@ -1,1 +1,1 @@
-__all__ = ["dummyprocess","ultimatequestionprocess","moreInOne","moreInstancesInOne","tests"]
+__all__ = ["buffer", "dummyprocess","ultimatequestionprocess","moreInOne","moreInstancesInOne","tests"]

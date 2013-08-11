@@ -1,6 +1,6 @@
 """Exception classes of WPS """
 # Author:	Jachym Cepicky
-#        	http://les-ejk.cz
+#               http://les-ejk.cz
 # Lince:
 #
 # Web Processing Service implementation
@@ -21,11 +21,14 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
 from xml.dom.minidom import Document
-import pywps
 from re import escape
+import sys
+import traceback
+import logging
+
+import pywps
 from pywps.Soap import SOAP
 import pywps.Soap
-import sys
 
 called = 0
 
@@ -93,10 +96,16 @@ class NoApplicableCode(WPSException):
         self.code = "NoApplicableCode"
         self.value = None
         self._make_xml()
-        self.message = value
+        self.message = value # not used?
         if value:
+            text = repr(value)
+            # if we get an error, use the traceback as text
+            if isinstance(value, Exception):
+                # We got an error, let's get the traceback
+                value = value.message
+                text = traceback.format_exc()
             self.ExceptionText = self.document.createElement("ExceptionText")
-            self.ExceptionText.appendChild(self.document.createTextNode(repr(value)))
+            self.ExceptionText.appendChild(self.document.createTextNode(text))
             self.Exception.appendChild(self.ExceptionText)
             self.value = escape(value)
 
@@ -142,7 +151,7 @@ class FileSizeExceeded(WPSException):
 
 class ServerError(WPSException):
     """ServerError WPS Exception
-    
+
     .. note:: This is custom PyWPS exception and should not be used."""
     def __init__(self,value=None):
         raise NoApplicableCode(value)
