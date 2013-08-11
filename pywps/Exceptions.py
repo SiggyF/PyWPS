@@ -95,15 +95,15 @@ class NoApplicableCode(WPSException):
         WPSException.__init__(self,value)
         self.code = "NoApplicableCode"
         self.value = None
+        text = repr(value)
+        # if we get an error, use the traceback as text
+        if isinstance(value, Exception):
+            # We got an error, let's get the traceback
+            text = traceback.format_exc()
+            value = value.message
         self._make_xml()
         self.message = value # not used?
         if value:
-            text = repr(value)
-            # if we get an error, use the traceback as text
-            if isinstance(value, Exception):
-                # We got an error, let's get the traceback
-                value = value.message
-                text = traceback.format_exc()
             self.ExceptionText = self.document.createElement("ExceptionText")
             self.ExceptionText.appendChild(self.document.createTextNode(text))
             self.Exception.appendChild(self.ExceptionText)
