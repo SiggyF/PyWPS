@@ -3,6 +3,7 @@ import json
 import os
 
 import shapely.wkt
+import shapely.geometry
 
 def first_from_filename(filename):
     """read the first geometry from filename"""
@@ -50,12 +51,20 @@ def decode(file_or_text):
     'LineString'
     'Point'
 """
-    for decoder in [
-                    lambda x: shapely.geometry.shape(json.loads(x)),
-                    shapely.wkt.loads,
-                    first_from_filename,
-                    first_from_bytes,
-                    ]:
+    # decoders for file or text
+    decoders = {
+        True: [
+            lambda x: shapely.geometry.shape(json.loads(open(x,'r').read())),
+            lambda x: shapely.wkt.loads(open(x, 'r').read()),
+            first_from_filename
+        ],
+        False: [
+            lambda x: shapely.geometry.shape(json.loads(x)),
+            shapely.wkt.loads,
+            first_from_bytes
+            ]
+        }
+    for decoder in decoders[os.path.isfile(file_or_text)]:
         try:
             # try all the decoders and stop if it works
             geom = decoder(file_or_text)
