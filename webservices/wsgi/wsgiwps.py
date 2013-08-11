@@ -63,7 +63,7 @@ def application(environ, start_response):
     except WPSException,e:
         return [e.getResponse()]
     except Exception, e:
-        return [e.getResponse()]
+        return [NoApplicableCode(e).getResponse()]
 
 
 if __name__ == '__main__':
