@@ -372,7 +372,7 @@ class WPSProcess:
         self.inputs[identifier] = InAndOutputs.LiteralInput(identifier=identifier,
                 title=title, abstract=abstract, metadata=metadata,
                 minOccurs=minOccurs,maxOccurs=maxOccurs,
-                dataType=type, uoms=uoms, values=allowedValues,
+                dataType=type, uoms=uoms, allowedValues=allowedValues,
                 default=default)
         return self.inputs[identifier]
 

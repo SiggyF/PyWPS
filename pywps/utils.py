@@ -74,7 +74,10 @@ def decode(file_or_text):
             pass
     else:
         # we have not found a working decoder
-        raise ValueError("could not decode %r" % file_or_text)
+        if os.path.isfile(file_or_text):
+            raise ValueError("could not decode %r from %s" % (open(file_or_text).read(), file_or_text))
+        else:
+            raise ValueError("could not decode %s" % (file_or_text, ))
     return geom
 if __name__ == '__main__':
     import doctest

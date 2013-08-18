@@ -1004,7 +1004,12 @@ class Execute(Request):
         if output.format["mimetype"] is not None:
         # CDATA section in output
             #attention to application/xml
-            if output.format["mimetype"].find("text") < 0 and output.format["mimetype"].find("xml")<0:
+            istext = False
+            if output.format["mimetype"].lower().split("/")[0] == "text":
+                istext = True
+            if output.format["mimetype"].lower() in {"application/xml", "application/json"}:
+                istext = True
+            if not istext:
             #complexOutput["cdata"] = 1
                 os.rename(output.value, output.value+".binary")
                 base64.encode(open(output.value+".binary"),open(output.value,"w"))
