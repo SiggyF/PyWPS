@@ -713,7 +713,8 @@ class BoundingBoxInput(Input):
 
 
         # convert possible string value to array
-        if type(input["value"]) == type(""):
+        if type(input["value"]) == type("") or\
+           type(input['value']) == type(u""):
             input["value"] = input["value"].split(",")
 
         # set dimensions
