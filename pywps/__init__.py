@@ -214,7 +214,7 @@ class Pywps:
         return self.inputs
 
     def performRequest(self,inputs = None, processes=None):
-        """Performs the desired WSP Request.
+        """Performs the desired WPS Request.
 
         :param inputs: idealy self.inputs (Default) object, result from
             parseRequest. Default is self.inputs

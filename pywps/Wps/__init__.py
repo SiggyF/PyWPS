@@ -223,6 +223,60 @@ http://wiki.rsg.pml.ac.uk/pywps/Introduction
                 outProcesses.append(process())
         return outProcesses
 
+
+    def _initFromCouchDB(self, url):
+        """initialize processes from a couchdb server. Expects the database wps and view views/processes"""
+        import couchdb
+        def process_from_dict(elem):
+            """create a process from the dictionary"""
+            process = pywps.Process.WPSProcess(identifier=elem["identifier"], 
+                                 title=elem.get("title", ""),
+                                 version=elem.get("version", "0.1"),
+                                 storeSupported="true", # always true for couch processes
+                                 statusSupported="true",
+                                 abstract=elem.get("abstract", "")
+                                 )
+
+            spatial_types = {"Point", "MultiPoint", "LineString", "LinearRing", "MultiLineString", 
+                             "Polygon" ,"MultiPolygon", "GeometryCollection"}
+
+            spatial_mimes = {"text/plain", "application/json", "application/gml+xml"}
+            TYPES = {"float": types.FloatType,
+                     "int": types.IntType,
+                     "double": types.FloatType,
+                     "string": types.StringType,
+                     "bool": types.BooleanType}
+            for identifier, info in  elem["inputs"].items():
+                if "/" in info["type"]:
+                    wpsinput = process.addComplexInput(identifier, info.get("title", ""), 
+                                    abstract=info.get("abstract"), metadata=info.get("metadata"), 
+                                    minOccurs=info.get("minOccurs",1), maxOccurs=info.get("maxOccurs", 1), 
+                                    formats=[{'mimeType': info["type"]}])
+                elif info["type"] in spatial_types:
+                    wpsinput = process.addComplexInput(identifier, info.get("title", ""), 
+                                    abstract=info.get("abstract"), metadata=info.get("metadata"), 
+                                    minOccurs=info.get("minOccurs",1), maxOccurs=info.get("maxOccurs", 1), 
+                                    formats=[{'mimeType': mime} for mime in spatial_mimes])
+                else:
+                    wpsinput = process.addLiteralInput(identifier = identifier,
+                                                   title = info.get("title", ""),
+                                                   default=info.get("default"),
+                                                   type=TYPES[info.get("type", "int")])
+                setattr(process, identifier, wpsinput)
+            return process
+        def processes_from_url(url):
+            """get a list of wps processes from the view view/proceses"""
+            server = couchdb.Server(url)
+            db = server['wps']
+            processes = db.view('views/processes')
+            for keyval in processes.rows:
+                row = dict(keyval["value"])
+                process = process_from_dict(row)
+                yield process
+        processes = list(processes_from_url(url))
+        return processes
+
+
     def checkProcess(self,identifiers):
         """check, if given identifiers are available as processes"""
 
@@ -318,7 +372,12 @@ http://wiki.rsg.pml.ac.uk/pywps/Introduction
             logging.info("Importing the processes from default (pywps/processes) location")
             from pywps import processes as pywpsprocesses
             self.processes = self._initFromDirectory(os.path.abspath(pywpsprocesses.__path__[-1]))
-
+        # add the couchdb processes
+        if config.getConfigValue("server","couchdb"):
+            couchdb_url = config.getConfigValue("server","couchdb")
+            logging.info("Adding processes from couchdb {}".format(couchdb_url))
+            processes = self._initFromCouchDB(couchdb_url)
+            self.processes.extend(processes)
         if len(self.processes) == 0:
             logging.warning("No processes found in any place. Continuing, but you can not execute anything.")
 
