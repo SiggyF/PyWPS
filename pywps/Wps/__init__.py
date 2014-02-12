@@ -229,7 +229,7 @@ http://wiki.rsg.pml.ac.uk/pywps/Introduction
         import couchdb
         def process_from_dict(elem):
             """create a process from the dictionary"""
-            process = pywps.Process.WPSProcess(identifier=elem["identifier"], 
+            process = pywps.Process.WPSProcess(identifier=elem["identifier"],
                                  title=elem.get("title", ""),
                                  version=elem.get("version", "0.1"),
                                  storeSupported="true", # always true for couch processes
@@ -237,25 +237,26 @@ http://wiki.rsg.pml.ac.uk/pywps/Introduction
                                  abstract=elem.get("abstract", "")
                                  )
 
-            spatial_types = {"Point", "MultiPoint", "LineString", "LinearRing", "MultiLineString", 
-                             "Polygon" ,"MultiPolygon", "GeometryCollection"}
+            spatial_types = {"point", "multipoint", "linestring", "linearring", "multilinestring",
+                             "polygon" ,"multipolygon", "geometrycollection"}
 
             spatial_mimes = {"text/plain", "application/json", "application/gml+xml"}
             TYPES = {"float": types.FloatType,
                      "int": types.IntType,
                      "double": types.FloatType,
                      "string": types.StringType,
-                     "bool": types.BooleanType}
+                     "bool": types.BooleanType
+            }
             for identifier, info in  elem["inputs"].items():
                 if "/" in info["type"]:
-                    wpsinput = process.addComplexInput(identifier, info.get("title", ""), 
-                                    abstract=info.get("abstract"), metadata=info.get("metadata"), 
-                                    minOccurs=info.get("minOccurs",1), maxOccurs=info.get("maxOccurs", 1), 
+                    wpsinput = process.addComplexInput(identifier, info.get("title", ""),
+                                    abstract=info.get("abstract"), metadata=info.get("metadata"),
+                                    minOccurs=info.get("minOccurs",1), maxOccurs=info.get("maxOccurs", 1),
                                     formats=[{'mimeType': info["type"]}])
-                elif info["type"] in spatial_types:
-                    wpsinput = process.addComplexInput(identifier, info.get("title", ""), 
-                                    abstract=info.get("abstract"), metadata=info.get("metadata"), 
-                                    minOccurs=info.get("minOccurs",1), maxOccurs=info.get("maxOccurs", 1), 
+                elif info["type"].lower() in spatial_types:
+                    wpsinput = process.addComplexInput(identifier, info.get("title", ""),
+                                    abstract=info.get("abstract"), metadata=info.get("metadata"),
+                                    minOccurs=info.get("minOccurs",1), maxOccurs=info.get("maxOccurs", 1),
                                     formats=[{'mimeType': mime} for mime in spatial_mimes])
                 else:
                     wpsinput = process.addLiteralInput(identifier = identifier,
