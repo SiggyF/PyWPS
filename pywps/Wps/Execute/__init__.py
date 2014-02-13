@@ -373,6 +373,7 @@ class Execute(Request):
                 doc = json.loads(text)
                 # add some stuff
                 doc["type"] = "input"
+                doc["identifier"] = self.process.identifier
                 db.save(doc)
                 self.promoteStatus(self.accepted,"Process %s accepted" %\
                                   self.process.identifier)
