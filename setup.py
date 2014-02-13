@@ -52,7 +52,6 @@ dist =  setup(
         platforms=["any"],
         classifiers= classifiers,
         long_description = "\n".join(doclines[1:]),
-
         packages = [
             'pywps',
             'pywps.Wps',

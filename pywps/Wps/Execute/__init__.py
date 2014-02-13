@@ -50,6 +50,8 @@ import pickle, subprocess
 
 from xml.sax.saxutils import escape
 
+import couchdb
+import json
 TEMPDIRPREFIX="pywps-instance"
 
 # TODO, cleanup exception handling, always make sure we have a traceback...
@@ -283,6 +285,7 @@ class Execute(Request):
                         self.cleanEnv()
                         raise pywps.NoApplicableCode("FTP error: " +  e.__str__())
 
+
                 # Add couchdb here...
                 self.storeRequired = True
 
@@ -298,6 +301,7 @@ class Execute(Request):
 
         # setInput values
         self.initProcess()
+
 
         if UMN.mapscript:
             self.umn = UMN.UMN(self.process, self.getSessionId())
@@ -348,6 +352,31 @@ class Execute(Request):
         # Description
         self.processDescription()
 
+        # couchdb handler
+        couchurl = config.getConfigValue("server", "couchdb")
+        if couchurl:
+            server = couchdb.Server(couchurl)
+            db = server['wps']
+            couch_processes = server['wps'].view('views/processes')
+            couch_process_ids = {row['key'] for row in couch_processes}
+            if self.process.identifier in couch_process_ids:
+                class WPSEncoder(json.JSONEncoder):
+                    def default(self, obj):
+                        if isinstance(obj, pywps.Pywps):
+                            return {'inputs': obj.inputs}
+                        # Let the base class default method raise the TypeError
+                        return json.JSONEncoder.default(self, obj)
+
+                encoder = WPSEncoder()
+                # now we create a json serializable version of the request
+                text = encoder.encode(wps)
+                doc = json.loads(text)
+                # add some stuff
+                doc["type"] = "input"
+                db.save(doc)
+                self.promoteStatus(self.accepted,"Process %s accepted" %\
+                                  self.process.identifier)
+                return
 
         # Asynchronous request
         # OGC 05-007r7 page 36, Table 50, note (a)
