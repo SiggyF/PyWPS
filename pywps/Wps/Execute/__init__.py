@@ -283,7 +283,7 @@ class Execute(Request):
                         self.cleanEnv()
                         raise pywps.NoApplicableCode("FTP error: " +  e.__str__())
 
-
+                # Add couchdb here...
                 self.storeRequired = True
 
         if self.storeRequired:
