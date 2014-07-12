@@ -38,52 +38,56 @@ doclines = __doc__.split("\n")
 
 
 dist =  setup(
-        name = name,
-        version = 'soap-branch',
-        maintainer="Jachym Cepicky",
-        maintainer_email = 'jachym@les-ejk.cz',
-        author = 'Jachym Cepicky',
-        author_email = 'jachym@les-ejk.cz',
-        url = 'http://pywps.wald.intevation.org',
-        license = "http://www.gnu.org/licenses/gpl.html",
-        download_url="http://pywps.wald.intevation.org",
-        description=doclines[0],
-        zip_safe=False,
-        platforms=["any"],
-        classifiers= classifiers,
-        long_description = "\n".join(doclines[1:]),
-        packages = [
-            'pywps',
-            'pywps.Wps',
-            'pywps.Wps.Execute',
-            'pywps.XSLT',
-            'pywps.etc',
-            'pywps.Parser',
-            'pywps.Process',
-            'pywps.Templates',
-            'pywps.Templates.1_0_0',
-            'pywps.Templates.1_0_0.inc',
-        ],
-        package_dir={
-                    'pywps':"pywps",
-                    'pywps.Wps':'pywps/Wps',
-                    'pywps.Wps.Execute':'pywps/Wps/Execute',
-                    'pywps.XSLT':'pywps/XSLT',
-                    'pywps.Parser':'pywps/Parser',
-                    'pywps.Process':'pywps/Process',
-                    'pywps.Templates':'pywps/Templates',
-                    'pywps.Templates.1_0_0':'pywps/Templates/1_0_0',
-                    'pywps.Templates.1_0_0.inc':'pywps/Templates/1_0_0/inc',
-                },
-        package_data={
-                    'pywps':
-                    ['Templates/1_0_0/*.tmpl',
-                     'XSLT/*.xsl',
-                     'processes/*.py-dist','processes/README',
-                     'default.cfg'],
-                    'pywps.Templates.1_0_0': ['inc/*.tmpl']
-                },
-        scripts=['wps.py']
+    name = name,
+    version = 'soap-branch',
+    maintainer="Jachym Cepicky",
+    maintainer_email = 'jachym@les-ejk.cz',
+    author = 'Jachym Cepicky',
+    author_email = 'jachym@les-ejk.cz',
+    url = 'http://pywps.wald.intevation.org',
+    license = "http://www.gnu.org/licenses/gpl.html",
+    download_url="http://pywps.wald.intevation.org",
+    description=doclines[0],
+    zip_safe=False,
+    platforms=["any"],
+    classifiers= classifiers,
+    long_description = "\n".join(doclines[1:]),
+    packages = [
+        'pywps',
+        'pywps.Wps',
+        'pywps.Wps.Execute',
+        'pywps.XSLT',
+        'pywps.etc',
+        'pywps.Parser',
+        'pywps.Process',
+        'pywps.Templates',
+        'pywps.Templates.1_0_0',
+        'pywps.Templates.1_0_0.inc',
+    ],
+    package_dir={
+        'pywps':"pywps",
+        'pywps.Wps':'pywps/Wps',
+        'pywps.Wps.Execute':'pywps/Wps/Execute',
+        'pywps.XSLT':'pywps/XSLT',
+        'pywps.Parser':'pywps/Parser',
+        'pywps.Process':'pywps/Process',
+        'pywps.Templates':'pywps/Templates',
+        'pywps.Templates.1_0_0':'pywps/Templates/1_0_0',
+        'pywps.Templates.1_0_0.inc':'pywps/Templates/1_0_0/inc',
+    },
+    package_data={
+        'pywps':
+        ['Templates/1_0_0/*.tmpl',
+         'XSLT/*.xsl',
+         'processes/*.py-dist','processes/README',
+         'default.cfg'],
+        'pywps.Templates.1_0_0': ['inc/*.tmpl']
+    },
+    scripts=['wps.py'],
+    entry_points="""\
+    [paste.app_factory]
+    main = webservices.wsgi.wsgiwps:main
+    """
 )
 
 # check, if we are really installing

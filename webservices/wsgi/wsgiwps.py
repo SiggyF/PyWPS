@@ -35,6 +35,9 @@ PyWPS wsgi script
 import pywps
 from pywps.Exceptions import *
 
+def main(config):
+    return application
+
 def application(environ, start_response):
 
     status = '200 OK'
