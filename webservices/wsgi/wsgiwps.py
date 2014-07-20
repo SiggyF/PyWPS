@@ -44,6 +44,7 @@ def application(environ, start_response):
     response_headers = [('Content-type','text/xml')]
     start_response(status, response_headers)
 
+
     inputQuery = None
     if "REQUEST_METHOD" in environ and environ["REQUEST_METHOD"] == "GET":
         inputQuery = environ["QUERY_STRING"]
