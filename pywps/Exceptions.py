@@ -100,14 +100,13 @@ class NoApplicableCode(WPSException):
         if isinstance(value, Exception):
             # We got an error, let's get the traceback
             text = traceback.format_exc()
-            value = value.message
         self._make_xml()
         self.message = value # not used?
         if value:
             self.ExceptionText = self.document.createElement("ExceptionText")
             self.ExceptionText.appendChild(self.document.createTextNode(text))
             self.Exception.appendChild(self.ExceptionText)
-            self.value = escape(value)
+            self.value = escape(text)
 
 class VersionNegotiationFailed(WPSException):
     """VersionNegotiationFailed WPS Exception"""

@@ -272,8 +272,11 @@ http://wiki.rsg.pml.ac.uk/pywps/Introduction
             processes = db.view('views/processes')
             for keyval in processes.rows:
                 row = dict(keyval["value"])
-                process = process_from_dict(row)
-                yield process
+                try:
+                    process = process_from_dict(row)
+                    yield process
+                except Exception, e:
+                    logging.exception("Could not import %s", row)
         processes = list(processes_from_url(url))
         return processes
 
