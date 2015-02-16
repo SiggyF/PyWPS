@@ -356,9 +356,18 @@ class Execute(Request):
         couchurl = config.getConfigValue("server", "couchdb")
         if couchurl:
             server = couchdb.Server(couchurl)
-            db = server['wps']
-            couch_processes = server['wps'].view('views/processes')
-            couch_process_ids = {row['key'] for row in couch_processes}
+            try:
+                db = server['wps']
+                couch_processes = server['wps'].view('views/processes')
+                couch_process_ids = {row['key'] for row in couch_processes}
+            except IOError:
+                logging.exception("Could not connect to %s", couchurl)
+                couch_processes = []
+                couch_process_ids = []
+            except couchdb.http.ResourceNotFound:
+                logging.exception("Could not open database 'wps'")
+                couch_processes = []
+                couch_process_ids = []
             if self.process.identifier in couch_process_ids:
                 class WPSEncoder(json.JSONEncoder):
                     def default(self, obj):

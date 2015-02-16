@@ -267,8 +267,16 @@ http://wiki.rsg.pml.ac.uk/pywps/Introduction
             return process
         def processes_from_url(url):
             """get a list of wps processes from the view view/proceses"""
+            processes = []
             server = couchdb.Server(url)
-            db = server['wps']
+            try:
+                db = server['wps']
+            except IOError:
+                logging.exception("Could not connect to %s", url)
+                return
+            except couchdb.http.ResourceNotFound:
+                logging.exception("Could not open database 'wps'")
+                return
             processes = db.view('views/processes')
             for keyval in processes.rows:
                 row = dict(keyval["value"])
