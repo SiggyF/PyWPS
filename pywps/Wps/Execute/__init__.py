@@ -225,7 +225,6 @@ class Execute(Request):
 
 
     def __init__(self,wps, processes=None, spawned=False):
-
         Request.__init__(self,wps,processes)
 
         self.wps = wps
@@ -542,7 +541,6 @@ class Execute(Request):
 
         # set input values
         for identifier in self.process.inputs:
-
             # Status
             self.promoteStatus(self.paused,
                     statusMessage="Getting input %s of process %s" %\
@@ -584,7 +582,7 @@ class Execute(Request):
         # make sure, all inputs do have values
         for identifier in self.process.inputs:
             input = self.process.inputs[identifier]
-            if input.getValue() == None and input.minOccurs > 0:
+            if input.getValue() is None and input.minOccurs > 0:
                 self.cleanEnv()
                 raise pywps.MissingParameterValue(identifier)
 
