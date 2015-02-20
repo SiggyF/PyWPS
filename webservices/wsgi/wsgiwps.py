@@ -83,5 +83,5 @@ if __name__ == '__main__':
             )[0],"tests","processes")
 
     from wsgiref.simple_server import make_server
-    srv = make_server('localhost', 8081, application)
+    srv = make_server('0.0.0.0', 8081, application)
     srv.serve_forever()
