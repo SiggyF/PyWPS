@@ -21,7 +21,8 @@ Inputs and outputs of OGC WPS Processes
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
-import os,types,re, base64,logging
+import os,types,re, base64
+import logging
 from pywps import Exceptions
 import sys
 import urllib, tempfile
@@ -462,9 +463,11 @@ class ComplexInput(Input):
                 f1.close()
                 f2.close()
             except:
+                logging.exception("decoding error")
                 self.onProblem("NoApplicableCode", "Could not convert text input to binary using base64 encoding.")
             finally:
-                os.remove(fout.name+".base64")
+                if os.path.exists(fout.name+".base64"):
+                    os.remove(fout.name+".base64")
         #Checking what is actu
         try:
             mimeTypeMagic=self.ms.file(fileName).split(';')[0]
@@ -550,6 +553,7 @@ class ComplexInput(Input):
         :param what: Message with error description
         :param why: Error code
        """
+        logging.warn("what: %s, why: %s")
         pass
 
     def checkMimeTypeIn(self,fileName):
