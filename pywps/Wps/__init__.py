@@ -248,11 +248,13 @@ http://wiki.rsg.pml.ac.uk/pywps/Introduction
                      "bool": types.BooleanType
             }
             for identifier, info in  elem["inputs"].items():
+                # one mime type
                 if "/" in info["type"]:
                     wpsinput = process.addComplexInput(identifier, info.get("title", ""),
                                     abstract=info.get("abstract"), metadata=info.get("metadata"),
                                     minOccurs=info.get("minOccurs",1), maxOccurs=info.get("maxOccurs", 1),
                                     formats=[{'mimeType': info["type"]}])
+                # spatial type
                 elif info["type"].lower() in spatial_types:
                     wpsinput = process.addComplexInput(identifier, info.get("title", ""),
                                     abstract=info.get("abstract"), metadata=info.get("metadata"),

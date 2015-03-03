@@ -283,13 +283,26 @@ class Execute(Request):
                         traceback.print_exc(file=pywps.logFile)
                         self.cleanEnv()
                         raise pywps.NoApplicableCode("FTP error: " +  e.__str__())
-
-
                 # Add couchdb here...
                 self.storeRequired = True
 
+        couchurl = config.getConfigValue("server", "couchdb")
+        couch_process_ids = set()
+        couch_processes = []
+        if couchurl:
+            server = couchdb.Server(couchurl)
+            try:
+                db = server['wps']
+                couch_processes = server['wps'].view('views/processes')
+                couch_process_ids = {row['key'] for row in couch_processes}
+            except IOError:
+                logging.exception("Could not connect to %s", couchurl)
+            except couchdb.http.ResourceNotFound:
+                logging.exception("Could not open database 'wps'")
+
         if self.storeRequired:
             self.statusLocation = config.getConfigValue("server","outputUrl")+"/"+self.getSessionId()+".xml"
+
 
         # is lineage required ?
         lineageRequired = False
@@ -301,7 +314,11 @@ class Execute(Request):
         # setInput values
         self.initProcess()
 
+        if self.process.identifier in couch_process_ids:
+            outputType = "couchdb"
+            self.storeRequired = True
 
+        
         if UMN.mapscript:
             self.umn = UMN.UMN(self.process, self.getSessionId())
 
@@ -352,40 +369,33 @@ class Execute(Request):
         self.processDescription()
 
         # couchdb handler
-        couchurl = config.getConfigValue("server", "couchdb")
-        if couchurl:
-            server = couchdb.Server(couchurl)
-            try:
-                db = server['wps']
-                couch_processes = server['wps'].view('views/processes')
-                couch_process_ids = {row['key'] for row in couch_processes}
-            except IOError:
-                logging.exception("Could not connect to %s", couchurl)
-                couch_processes = []
-                couch_process_ids = []
-            except couchdb.http.ResourceNotFound:
-                logging.exception("Could not open database 'wps'")
-                couch_processes = []
-                couch_process_ids = []
-            if self.process.identifier in couch_process_ids:
-                class WPSEncoder(json.JSONEncoder):
-                    def default(self, obj):
-                        if isinstance(obj, pywps.Pywps):
-                            return {'inputs': obj.inputs}
-                        # Let the base class default method raise the TypeError
-                        return json.JSONEncoder.default(self, obj)
+        if self.process.identifier in couch_process_ids:
+            class WPSEncoder(json.JSONEncoder):
+                def default(self, obj):
+                    if isinstance(obj, pywps.Pywps):
+                        return {'inputs': obj.inputs}
+                    # Let the base class default method raise the TypeError
+                    return json.JSONEncoder.default(self, obj)
 
-                encoder = WPSEncoder()
-                # now we create a json serializable version of the request
-                text = encoder.encode(wps)
-                doc = json.loads(text)
-                # add some stuff
-                doc["type"] = "input"
-                doc["identifier"] = self.process.identifier
-                db.save(doc)
-                self.promoteStatus(self.accepted,"Process %s accepted" %\
-                                  self.process.identifier)
-                return
+            encoder = WPSEncoder()
+            # now we create a json serializable version of the request
+            text = encoder.encode(wps)
+            doc = json.loads(text)
+            # add some stuff
+            logging.info('generating doc with id %s', self.wps.UUID)
+            doc["_id"] = self.wps.UUID
+            doc["type"] = "input"
+            doc["identifier"] = self.process.identifier
+            (id, rev) = db.save(doc)
+            self.statusLocation = config.getConfigValue("server","outputUrl") + \
+                                  "/" + \
+                                  str(id) + \
+                                  ".xml"
+            self.templateProcessor.set("statuslocation",
+                                       self.statusLocation)
+            self.promoteStatus(self.accepted,"Process %s accepted" %\
+                              self.process.identifier)
+            return
 
         # Asynchronous request
         # OGC 05-007r7 page 36, Table 50, note (a)
@@ -1264,7 +1274,8 @@ class Execute(Request):
             "pywps-"+uuid.uuid1()
 
         """
-        return "pywps-"+self.wps.UUID
+        
+        return "pywps-" + self.wps.UUID
 
     def getSessionIdFromStatusLocation(self,statusLocation):
         """ Parses the statusLocation, and gets the unique session ID from it
