@@ -40,12 +40,18 @@ def main(config):
 
 def application(environ, start_response):
     status = '200 OK'
-    response_headers = [('Content-type','text/xml')]
+    # TODO: make access control configurable
+    response_headers = [
+        ('Content-type', 'text/xml'),
+        ('Access-Control-Allow-Origin', '*'),
+        ('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept')
+    ]
+    logging.info("environ: %s", environ)
     start_response(status, response_headers)
 
 
     inputQuery = None
-    if "REQUEST_METHOD" in environ and environ["REQUEST_METHOD"] == "GET":
+    if "REQUEST_METHOD" in environ and environ["REQUEST_METHOD"] in ("GET", "OPTIONS"):
         inputQuery = environ["QUERY_STRING"]
     elif "wsgi.input" in environ:
         inputQuery = environ['wsgi.input']
@@ -61,6 +67,7 @@ def application(environ, start_response):
         if wps.parseRequest(inputQuery):
             pywps.debug(wps.inputs)
             wps.performRequest()
+            logging.info("response type %s", type(wps.response))
             return wps.response
     except WPSException,e:
         return [e.getResponse()]

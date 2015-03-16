@@ -37,6 +37,7 @@ from sys import stderr as STDERR
 from pywps import Templates
 from pywps import Soap
 import types
+import datetime
 import traceback
 import logging
 
@@ -266,6 +267,26 @@ http://wiki.rsg.pml.ac.uk/pywps/Introduction
                                                    default=info.get("default"),
                                                    type=TYPES[info.get("type", "int")])
                 setattr(process, identifier, wpsinput)
+            for identifier, info in elem["outputs"].items():
+                # one mime type
+                if "/" in info["type"]:
+                    wpsoutput = process.addComplexOutput(identifier, info.get("title", ""),
+                                    abstract=info.get("abstract"), metadata=info.get("metadata"),
+                                    minOccurs=info.get("minOccurs",1), maxOccurs=info.get("maxOccurs", 1),
+                                    formats=[{'mimeType': info["type"]}])
+                # spatial type
+                elif info["type"].lower() in spatial_types:
+                    wpsoutput = process.addComplexOoutput(identifier, info.get("title", ""),
+                                    abstract=info.get("abstract"), metadata=info.get("metadata"),
+                                    minOccurs=info.get("minOccurs",1), maxOccurs=info.get("maxOccurs", 1),
+                                    formats=[{'mimeType': mime} for mime in spatial_mimes])
+                else:
+                    wpsoutput = process.addLiteralOutput(identifier = identifier,
+                                                   title = info.get("title", ""),
+                                                   default=info.get("default"),
+                                                   type=TYPES[info.get("type", "int")])
+                setattr(process, identifier, wpsoutput)
+
             return process
         def processes_from_url(url):
             """get a list of wps processes from the view view/proceses"""
@@ -326,18 +347,31 @@ http://wiki.rsg.pml.ac.uk/pywps/Introduction
         """
 
         dataType = {"type": None, "reference": None}
-        if inoutput.dataType == types.StringType:
+        logging.info("inoutput %s type %s", inoutput, inoutput.dataType)
+        if issubclass(inoutput.dataType, types.StringType):
             dataType["type"] = "string"
             dataType["reference"] = "http://www.w3.org/TR/xmlschema-2/#string"
-        elif inoutput.dataType == types.FloatType:
+        elif issubclass(inoutput.dataType, types.FloatType):
             dataType["type"] = "float"
             dataType["reference"] = "http://www.w3.org/TR/xmlschema-2/#float"
-        elif inoutput.dataType == types.IntType:
+        elif issubclass(inoutput.dataType, types.IntType):
             dataType["type"] = "integer"
             dataType["reference"] = "http://www.w3.org/TR/xmlschema-2/#integer"
-        elif inoutput.dataType == types.BooleanType:
+        elif issubclass(inoutput.dataType, types.BooleanType):
             dataType["type"] = "boolean"
             dataType["reference"] = "http://www.w3.org/TR/xmlschema-2/#boolean"
+        elif issubclass(inoutput.dataType, datetime.datetime):
+            dataType["type"] = "dateTime"
+            dataType["reference"] = "http://www.w3.org/TR/xmlschema-2/#dateTime"
+        elif issubclass(inoutput.dataType, datetime.date):
+            dataType["type"] = "date"
+            dataType["reference"] = "http://www.w3.org/TR/xmlschema-2/#date"
+        elif issubclass(inoutput.dataType, datetime.time):
+            dataType["type"] = "time"
+            dataType["reference"] = "http://www.w3.org/TR/xmlschema-2/#time"
+        elif issubclass(inoutput.dataType, datetime.timedelta):
+            dataType["type"] = "duration"
+            dataType["reference"] = "http://www.w3.org/TR/xmlschema-2/#duration"
         else:
             # TODO To be continued...
             dataType["type"] = "string"

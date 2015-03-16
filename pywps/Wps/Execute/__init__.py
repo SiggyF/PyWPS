@@ -1419,15 +1419,25 @@ class Execute(Request):
         output = self.process.outputs[self.rawDataOutput]
         if output.type == "LiteralValue":
             self.contentType ="text/plain"
-            self.response = output.value
+            self.response = str(output.value)
 
         elif output.type == "ComplexValue":
 
             #self.checkMimeTypeIn(output)
              # copy the file to safe place
             outName = os.path.basename(output.value)
-            outSuffix = os.path.splitext(outName)[1]
-            tmp = tempfile.mkstemp(suffix=outSuffix, prefix="%s-%s" % (output.identifier,self.pid),dir=os.path.join(config.getConfigValue("server","outputPath")))
+            suffix = os.path.splitext(outName)[1]
+            dirname = os.path.join(config.getConfigValue("server","outputPath"))
+            prefix = "%s-%s" % (output.identifier,self.pid)
+            logging.info("prefix: %s, suffix: %s, dirname %s, cwd: %s",
+                         prefix,
+                         suffix,
+                         dirname,
+                         os.getcwd()
+            )
+            tmp = tempfile.mkstemp(suffix=suffix,
+                                   prefix=prefix,
+                                   dir=dirname)
             outFile = tmp[1]
 
             if not self._samefile(output.value,outFile):
