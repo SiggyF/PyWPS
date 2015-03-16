@@ -7,7 +7,6 @@ future
     Regular expression for empty parameter identificaion
 
 """
-
 import types
 from sys import stdout as STDOUT
 from sys import stderr as STDERR
@@ -16,6 +15,7 @@ from pywps import Exceptions
 from os import name as OSNAME
 from pywps import Soap 
 import pywps.Ftp
+import couchdb
 
 
 
@@ -64,11 +64,15 @@ def response(response,targets,soapVersion=None,isSoap=False,isSoapExecute=False,
         # java servlet response
         elif OSNAME == "java" :
             _printResponseJava(f,response,contentType)
-
+        elif isinstance(f, tuple) and len(f) ==2 and isinstance(f[0], couchdb.Database):
+            db, doc = f
+            _printResponseCouchdb(db, doc, response, contentType)
+            
         # close and open again, if it is a file
         if type(response) == types.FileType:
             response.close()
             response = open(response.name,"rb")
+        
 
 def _printResponseModPython(request, response, contentType="application/xml"):
 
@@ -126,3 +130,6 @@ def _printResponseJava( resp, response,contentType="application/xml"):
         toClient.println(response.read())
     else:
         toClient.println(response)
+
+def _printResponseCouchdb(db, doc, response, contentType="application/xml"):
+    db.put_attachment(doc, response, filename='status', content_type=contentType)

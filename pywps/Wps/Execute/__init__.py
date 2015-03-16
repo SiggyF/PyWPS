@@ -36,6 +36,10 @@ import sys,os
 #    )
 
 sys.path[0]= os.path.join(os.path.dirname( os.path.abspath(__file__)) ,"..","..","..")
+
+import time
+import threading
+
 import pywps
 import pywps.Ftp
 from pywps import config
@@ -386,15 +390,42 @@ class Execute(Request):
             doc["_id"] = self.wps.UUID
             doc["type"] = "input"
             doc["identifier"] = self.process.identifier
-            (id, rev) = db.save(doc)
-            self.statusLocation = config.getConfigValue("server","outputUrl") + \
-                                  "/" + \
-                                  str(id) + \
-                                  ".xml"
+            (id_, rev) = db.save(doc)
+            self.statusLocation = config.getConfigValue("server","couchdb") + \
+                                  "/wps/" + \
+                                  str(id_) + \
+                                  "/status"
             self.templateProcessor.set("statuslocation",
                                        self.statusLocation)
             self.promoteStatus(self.accepted,"Process %s accepted" %\
                               self.process.identifier)
+            def watch_couchdb():
+                for i in range(10):
+                    doc = db[id_]
+                    finished = 'result' in doc or doc.get('type') == 'output'
+                    if finished:
+                        self.promoteStatus(self.succeeded,
+                                           statusMessage="PyWPS Process %s successfully calculated" %\
+                                           self.process.identifier)
+                        pywps.response.response(self.response,
+                                                (db, doc),
+                                                self.wps.parser.isSoap,
+                                                self.wps.parser.isSoapExecute,
+                                                self.contentType,isPromoteStatus=False)
+                        break
+                    time.sleep(1)
+                else:
+                    self.promoteStatus(
+                        self.failed,
+                        statusMessage="PyWPS Process %s timed out" % self.process.identifier,
+                        exceptioncode="NoApplicableCode"
+                    )
+                    pywps.response.response(self.response,
+                                            (db, doc),
+                                            self.wps.parser.isSoap,
+                                            self.wps.parser.isSoapExecute,
+                                            self.contentType,isPromoteStatus=False)
+            threading.Thread(target=watch_couchdb).start()
             return
 
         # Asynchronous request
