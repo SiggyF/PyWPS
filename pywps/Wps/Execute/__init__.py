@@ -39,6 +39,7 @@ sys.path[0]= os.path.join(os.path.dirname( os.path.abspath(__file__)) ,"..",".."
 
 import time
 import threading
+import ConfigParser
 
 import pywps
 import pywps.Ftp
@@ -391,7 +392,11 @@ class Execute(Request):
             doc["type"] = "input"
             doc["identifier"] = self.process.identifier
             (id_, rev) = db.save(doc)
-            self.statusLocation = config.getConfigValue("server","couchdb_remote") + \
+            try:
+                base_url = config.getConfigValue("server","couchdb_remote")
+            except ConfigParser.NoOptionError:
+                base_url = config.getConfigValue("server","couchdb")
+            self.statusLocation = base_url + \
                                   "/wps/" + \
                                   str(id_) + \
                                   "/status"
@@ -407,6 +412,11 @@ class Execute(Request):
                         self.promoteStatus(self.succeeded,
                                            statusMessage="PyWPS Process %s successfully calculated" %\
                                            self.process.identifier)
+                        logging.info('rawdataoutput %s', self.rawDataOutput)
+                        if not self.rawDataOutput:
+                            self.processOutputs()
+                        else:
+                            self.response = base64.decodestring(doc['result'])
                         pywps.response.response(self.response,
                                                 (db, doc),
                                                 self.wps.parser.isSoap,
