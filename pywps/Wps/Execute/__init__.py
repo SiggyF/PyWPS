@@ -391,7 +391,7 @@ class Execute(Request):
             doc["type"] = "input"
             doc["identifier"] = self.process.identifier
             (id_, rev) = db.save(doc)
-            self.statusLocation = config.getConfigValue("server","couchdb") + \
+            self.statusLocation = config.getConfigValue("server","couchdb_remote") + \
                                   "/wps/" + \
                                   str(id_) + \
                                   "/status"
