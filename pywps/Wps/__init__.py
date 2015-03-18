@@ -272,13 +272,11 @@ http://wiki.rsg.pml.ac.uk/pywps/Introduction
                 if "/" in info["type"]:
                     wpsoutput = process.addComplexOutput(identifier, info.get("title", ""),
                                     abstract=info.get("abstract"), metadata=info.get("metadata"),
-                                    minOccurs=info.get("minOccurs",1), maxOccurs=info.get("maxOccurs", 1),
                                     formats=[{'mimeType': info["type"]}])
                 # spatial type
                 elif info["type"].lower() in spatial_types:
                     wpsoutput = process.addComplexOoutput(identifier, info.get("title", ""),
                                     abstract=info.get("abstract"), metadata=info.get("metadata"),
-                                    minOccurs=info.get("minOccurs",1), maxOccurs=info.get("maxOccurs", 1),
                                     formats=[{'mimeType': mime} for mime in spatial_mimes])
                 else:
                     wpsoutput = process.addLiteralOutput(identifier = identifier,
