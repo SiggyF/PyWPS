@@ -405,7 +405,7 @@ class Execute(Request):
             self.promoteStatus(self.accepted,"Process %s accepted" %\
                               self.process.identifier)
             def watch_couchdb():
-                for i in range(10):
+                for i in range(20):
                     doc = db[id_]
                     finished = 'result' in doc or doc.get('type') == 'output'
                     if finished:
