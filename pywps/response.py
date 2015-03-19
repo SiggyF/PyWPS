@@ -132,4 +132,6 @@ def _printResponseJava( resp, response,contentType="application/xml"):
         toClient.println(response)
 
 def _printResponseCouchdb(db, doc, response, contentType="application/xml"):
+    # get the latest version of doc
+    doc = db[doc['_id']]
     db.put_attachment(doc, response, filename='status', content_type=contentType)

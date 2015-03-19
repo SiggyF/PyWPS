@@ -213,7 +213,6 @@ class LoopToken(Token):
         return val
 
     def setParent(self, parent):
-
         # set parent to each childs
         for child in self._childs:
             child.setParent(self)

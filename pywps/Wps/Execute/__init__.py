@@ -414,7 +414,15 @@ class Execute(Request):
                                            self.process.identifier)
                         logging.info('rawdataoutput %s', self.rawDataOutput)
                         if not self.rawDataOutput:
+                            # response should be a file like
+                            try:
+                                output = self.process.outputs.values()[0]
+                                output.value = doc['result']
+                                logging.warn('output file %s', output)
+                            except:
+                                logging.exception('could not read output')
                             self.processOutputs()
+                            self.response = self.templateProcessor.__str__()
                         else:
                             self.response = base64.decodestring(doc['result'])
                         pywps.response.response(self.response,
@@ -435,6 +443,8 @@ class Execute(Request):
                                             self.wps.parser.isSoap,
                                             self.wps.parser.isSoapExecute,
                                             self.contentType,isPromoteStatus=False)
+            self.consolidateInputs()
+            self.consolidateOutputs()
             threading.Thread(target=watch_couchdb).start()
             return
 
@@ -1056,7 +1066,7 @@ class Execute(Request):
                         templateOutput = self._literalOutput(output,templateOutput)
 
                     elif output.type == "ComplexValue":
-                            templateOutput = self._complexOutput(output,templateOutput)
+                        templateOutput = self._complexOutput(output,templateOutput)
                     elif output.type == "BoundingBoxValue":
                         templateOutput = self._bboxOutput(output,templateOutput)
 
@@ -1064,6 +1074,7 @@ class Execute(Request):
 
             except pywps.WPSException,e:
                #In case we have a specific WPS exception e.g incorrect mimeType etc
+                logging.exception('generating output xml for process failed')
                 traceback.print_exc(file=pywps.logFile)
                 self.promoteStatus(self.failed,statusMessage=e.value,exceptioncode=e.code, locator=e.locator)
 
@@ -1072,6 +1083,7 @@ class Execute(Request):
                 traceback.print_exc(file=pywps.logFile)
                 raise pywps.NoApplicableCode(
                         "Process executed. Failed to build final response for output [%s]: %s" % (identifier,e))
+        logging.info('template outputs %s', templateOutputs)
         self.templateProcessor.set("Outputs",templateOutputs)
 
     def _literalOutput(self, output, literalOutput):
@@ -1084,30 +1096,36 @@ class Execute(Request):
 
     def _complexOutput(self, output, complexOutput):
 
+        logging.info("output: %s\ncomplexoutput: %s", output.format, complexOutput)
         #Checks for the correct output and logs
         self.checkMimeTypeOutput(output)
 
-        complexOutput["mimetype"] = output.format["mimetype"]
-        complexOutput["encoding"] = output.format["encoding"]
-        complexOutput["schema"] = output.format["schema"]
-
-        if output.format["mimetype"] is not None:
+        complexOutput["mimetype"] = output.format.get("mimetype", 'application/octet-stream')
+        complexOutput["encoding"] = output.format.get("encoding", 'utf8') or ''
+        if complexOutput['mimetype'] == 'application/octet-stream':
+            complexOutput['encoding'] = 'base64'
+        complexOutput["schema"] = output.format.get("schema", '')  or ''
+        complexOutput['abstract'] = ''
+        complexOutput['metadata'] = ''
+        if complexOutput['mimetype'] is not None:
         # CDATA section in output
             #attention to application/xml
             istext = False
-            if output.format["mimetype"].lower().split("/")[0] == "text":
+            if complexOutput['mimetype'].lower().split("/")[0] == "text":
                 istext = True
-            if output.format["mimetype"].lower() in {"application/xml", "application/json"}:
+            if complexOutput['mimetype'].lower() in {"application/xml", "application/json"}:
                 istext = True
             if not istext:
             #complexOutput["cdata"] = 1
-                os.rename(output.value, output.value+".binary")
-                base64.encode(open(output.value+".binary"),open(output.value,"w"))
-
-
+                if os.path.exists(output.value):
+                    # if output.value is a filename
+                    os.rename(output.value, output.value+".binary")
+                    base64.encode(open(output.value+".binary"),open(output.value,"w"))
         # set output value
-        complexOutput["complexdata"] = open(output.value,"r").read()
-
+        if os.path.exists(output.value):
+            complexOutput["complexdata"] = open(output.value,"r").read()
+        else:
+            complexOutput["complexdata"] = output.value
         # remove <?xml version= ... part from beginning of some xml
         # documents
         #Better <?xml search due to problems with \n
