@@ -33,6 +33,7 @@ import time
 import types
 import sys,os
 import traceback
+import collections
 
 class Status:
     """Status object for each process
@@ -286,8 +287,8 @@ class WPSProcess:
         self.debug = False
 
         self.status = Status()
-        self.inputs = {}
-        self.outputs = {}
+        self.inputs = collections.OrderedDict()
+        self.outputs = collections.OrderedDict()
 
         self.lang = Lang.Lang()
 

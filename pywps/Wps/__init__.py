@@ -246,9 +246,14 @@ http://wiki.rsg.pml.ac.uk/pywps/Introduction
                      "int": types.IntType,
                      "double": types.FloatType,
                      "string": types.StringType,
-                     "bool": types.BooleanType
+                     "bool": types.BooleanType,
+                     "datetime": datetime.datetime,
+                     "date": datetime.date,
+                     "time": datetime.time,
+                     "duration": datetime.timedelta
             }
-            for identifier, info in  elem["inputs"].items():
+            for identifier in elem.get("inputNames",elem["inputs"]):
+                info = elem["inputs"][identifier]
                 # one mime type
                 if "/" in info["type"]:
                     wpsinput = process.addComplexInput(identifier, info.get("title", ""),
@@ -265,6 +270,7 @@ http://wiki.rsg.pml.ac.uk/pywps/Introduction
                     wpsinput = process.addLiteralInput(identifier = identifier,
                                                    title = info.get("title", ""),
                                                    default=info.get("default"),
+                                                   allowedValues = info.get("allowedValues","*"),
                                                    type=TYPES[info.get("type", "int")])
                 setattr(process, identifier, wpsinput)
             for identifier, info in elem["outputs"].items():
@@ -352,12 +358,12 @@ http://wiki.rsg.pml.ac.uk/pywps/Introduction
         elif issubclass(inoutput.dataType, types.FloatType):
             dataType["type"] = "float"
             dataType["reference"] = "http://www.w3.org/TR/xmlschema-2/#float"
-        elif issubclass(inoutput.dataType, types.IntType):
-            dataType["type"] = "integer"
-            dataType["reference"] = "http://www.w3.org/TR/xmlschema-2/#integer"
         elif issubclass(inoutput.dataType, types.BooleanType):
             dataType["type"] = "boolean"
             dataType["reference"] = "http://www.w3.org/TR/xmlschema-2/#boolean"
+        elif issubclass(inoutput.dataType, types.IntType):
+            dataType["type"] = "integer"
+            dataType["reference"] = "http://www.w3.org/TR/xmlschema-2/#integer"
         elif issubclass(inoutput.dataType, datetime.datetime):
             dataType["type"] = "dateTime"
             dataType["reference"] = "http://www.w3.org/TR/xmlschema-2/#dateTime"
