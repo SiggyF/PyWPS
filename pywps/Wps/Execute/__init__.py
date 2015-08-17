@@ -424,7 +424,10 @@ class Execute(Request):
                             self.processOutputs()
                             self.response = self.templateProcessor.__str__()
                         else:
-                            self.response = base64.decodestring(doc['result'])
+                            try:
+                                self.response = base64.decodestring(doc['result'])
+                            except:
+                                self.response = doc['result']
                         pywps.response.response(self.response,
                                                 (db, doc),
                                                 self.wps.parser.isSoap,
