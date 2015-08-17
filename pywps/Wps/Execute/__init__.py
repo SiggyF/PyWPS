@@ -30,6 +30,7 @@
 __all__ = ["UMN"]
 
 import sys,os
+import re
 #sys.path.append(
 #    os.path.join(
 #        os.path.dirname( os.path.abspath(__file__)) ,"..","..","..")
@@ -58,6 +59,11 @@ from xml.sax.saxutils import escape
 import couchdb
 import json
 TEMPDIRPREFIX="pywps-instance"
+
+BASE64_RE = re.compile(
+    r'^([A-Za-z0-9+/]{4})*([A-Za-z0-9+/]{4}|[A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{2}==)$'
+)
+                            
 
 # TODO, cleanup exception handling, always make sure we have a traceback...
 
@@ -424,9 +430,10 @@ class Execute(Request):
                             self.processOutputs()
                             self.response = self.templateProcessor.__str__()
                         else:
-                            try:
+                            # check if we have a base64 string, or something that looks like it.....
+                            if (BASE64_RE.match(doc['result'])):
                                 self.response = base64.decodestring(doc['result'])
-                            except:
+                            else:
                                 self.response = doc['result']
                         pywps.response.response(self.response,
                                                 (db, doc),
