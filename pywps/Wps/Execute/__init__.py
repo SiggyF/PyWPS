@@ -63,7 +63,7 @@ TEMPDIRPREFIX="pywps-instance"
 BASE64_RE = re.compile(
     r'^([A-Za-z0-9+/]{4})*([A-Za-z0-9+/]{4}|[A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{2}==)$'
 )
-                            
+
 
 # TODO, cleanup exception handling, always make sure we have a traceback...
 
@@ -329,7 +329,7 @@ class Execute(Request):
             outputType = "couchdb"
             self.storeRequired = True
 
-        
+
         if UMN.mapscript:
             self.umn = UMN.UMN(self.process, self.getSessionId())
 
@@ -434,7 +434,12 @@ class Execute(Request):
                             if (BASE64_RE.match(doc['result'])):
                                 self.response = base64.decodestring(doc['result'])
                             else:
-                                self.response = doc['result']
+                                if 'result' in doc:
+                                    self.response = doc['result']
+                                # if we don't have a result field, it should be an attachment
+                                else:
+                                    self.response = db.get_attachment(doc, 'result')
+
                         pywps.response.response(self.response,
                                                 (db, doc),
                                                 self.wps.parser.isSoap,
@@ -480,7 +485,7 @@ class Execute(Request):
             FNULL = open(os.devnull,"w")
             subprocess.Popen([sys.executable, __file__,
                 os.path.join(tmpPath, self.__pickleFileName+"-"+str(self.wps.UUID)),self.outputFile.name],
-                stdout=FNULL,#subprocess.PIPE, 
+                stdout=FNULL,#subprocess.PIPE,
                 stderr=FNULL)#subprocess.PIPE)
 
             logging.info("This is parent process, end.")
@@ -1343,7 +1348,7 @@ class Execute(Request):
             "pywps-"+uuid.uuid1()
 
         """
-        
+
         return "pywps-" + self.wps.UUID
 
     def getSessionIdFromStatusLocation(self,statusLocation):
