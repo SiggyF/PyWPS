@@ -426,7 +426,8 @@ class Execute(Request):
                                 if 'result' in doc:
                                     output.value = doc['result']
                                 else:
-                                    output.value = db.get_attachment(doc, 'result')
+                                    attachment = db.get_attachment(doc, 'result')
+                                    output.value = attachment.read()
                                 logging.warn('output file %s', output)
                             except:
                                 logging.exception('could not read output')
