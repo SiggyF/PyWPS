@@ -435,14 +435,15 @@ class Execute(Request):
                             self.response = self.templateProcessor.__str__()
                         else:
                             # check if we have a base64 string, or something that looks like it.....
-                            if (BASE64_RE.match(doc['result'])):
-                                self.response = base64.decodestring(doc['result'])
-                            else:
-                                if 'result' in doc:
-                                    self.response = doc['result']
-                                # if we don't have a result field, it should be an attachment
+                            if 'result' in doc:
+                                if BASE64_RE.match(doc['result']):
+                                    self.response = base64.decodestring(doc['result'])
                                 else:
-                                    self.response = db.get_attachment(doc, 'result')
+                                    self.response = doc['result']
+                            # if we don't have a result field, it should be an attachment
+                            else:
+                                attachment = db.get_attachment(doc, 'result')
+                                self.response = attachment.read()
 
                         pywps.response.response(self.response,
                                                 (db, doc),
