@@ -423,7 +423,10 @@ class Execute(Request):
                             # response should be a file like
                             try:
                                 output = self.process.outputs.values()[0]
-                                output.value = doc['result']
+                                if 'result' in doc:
+                                    output.value = doc['result']
+                                else:
+                                    self.response = db.get_attachment(doc, 'result')
                                 logging.warn('output file %s', output)
                             except:
                                 logging.exception('could not read output')
