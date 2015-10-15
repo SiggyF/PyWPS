@@ -328,6 +328,8 @@ class Execute(Request):
         if self.process.identifier in couch_process_ids:
             outputType = "couchdb"
             self.storeRequired = True
+            self.statusRequired = True
+            self.spawned = True
 
 
         if UMN.mapscript:
@@ -408,48 +410,50 @@ class Execute(Request):
                                   "/status"
             self.templateProcessor.set("statuslocation",
                                        self.statusLocation)
-            self.promoteStatus(self.accepted,"Process %s accepted" %\
-                              self.process.identifier)
+            self.promoteStatus(self.accepted, "Process %s accepted" %\
+                               self.process.identifier, targets=[(db, doc)])
+            
             def watch_couchdb():
                 for i in range(20):
                     doc = db[id_]
                     finished = 'result' in doc or doc.get('type') == 'output'
+                    # For now we ignore rawdataoutput
                     if finished:
                         self.promoteStatus(self.succeeded,
                                            statusMessage="PyWPS Process %s successfully calculated" %\
-                                           self.process.identifier)
-                        logging.info('rawdataoutput %s', self.rawDataOutput)
-                        if not self.rawDataOutput:
-                            # response should be a file like
-                            try:
-                                output = self.process.outputs.values()[0]
-                                if 'result' in doc:
-                                    output.value = doc['result']
-                                else:
-                                    attachment = db.get_attachment(doc, 'result')
-                                    output.value = attachment.read()
-                                logging.warn('output file %s', output)
-                            except:
-                                logging.exception('could not read output')
-                            self.processOutputs()
-                            self.response = self.templateProcessor.__str__()
-                        else:
-                            # check if we have a base64 string, or something that looks like it.....
+                                           self.process.identifier, targets=[(db, doc)])
+                        logging.warn('rawdataoutput %s', self.rawDataOutput)
+                        # response should be a file like
+                        try:
+                            output = self.process.outputs.values()[0]
                             if 'result' in doc:
-                                if BASE64_RE.match(doc['result']):
-                                    self.response = base64.decodestring(doc['result'])
-                                else:
-                                    self.response = doc['result']
-                            # if we don't have a result field, it should be an attachment
+                                output.value = doc['result']
                             else:
+                                logging.warn('Document %s', dict(doc))
                                 attachment = db.get_attachment(doc, 'result')
-                                self.response = attachment.read()
+                                if attachment is not None:
+                                    # use an url as reference
+                                    output_url = base_url + \
+                                                 "/wps/" + \
+                                                 str(id_) + \
+                                                 "/result"
 
+                                    output.value = output_url
+                                    output.asReference = True
+                                    output.metadata = []
+                                else:
+                                    output.value = 'NO DATA'
+                            logging.warn('output file %s', output)
+                        except:
+                            logging.exception('could not read output')
+                        self.processOutputs()
+                        self.response = self.templateProcessor.__str__()
+                        # Store results in status
                         pywps.response.response(self.response,
                                                 (db, doc),
                                                 self.wps.parser.isSoap,
                                                 self.wps.parser.isSoapExecute,
-                                                self.contentType,isPromoteStatus=False)
+                                                self.contentType,isPromoteStatus=True)
                         break
                     time.sleep(1)
                 else:
@@ -624,8 +628,8 @@ class Execute(Request):
         for identifier in self.process.inputs:
             # Status
             self.promoteStatus(self.paused,
-                    statusMessage="Getting input %s of process %s" %\
-                    (identifier, self.process.identifier))
+                               statusMessage="Getting input %s of process %s" %\
+                               (identifier, self.process.identifier))
 
             input = self.process.inputs[identifier]
 
@@ -817,7 +821,7 @@ class Execute(Request):
             self.templateProcessor.set("processversion", self.process.version)
 
     def promoteStatus(self,status, statusMessage=0, percent=0,
-                    exceptioncode=0, locator=0, output=None):
+                    exceptioncode=0, locator=0, targets=None):
         """Sets status of currently performed Execute request
 
         :param status:  name of the status
@@ -825,6 +829,7 @@ class Execute(Request):
         :param percent: percent done message
         :param exceptioncode: eventually exception
         :param locator: where the problem occurred
+        :param targets: where to store the status result
         """
         self.statusTime = time.localtime()
         self.templateProcessor.set("statustime", time.strftime('%Y-%m-%dT%H:%M:%SZ', self.statusTime))
@@ -870,14 +875,25 @@ class Execute(Request):
 
         # update response
         self.response = self.templateProcessor.__str__()
+        logging.warn("status response: %s", self.response)
+        logging.warn("store required: %s", self.storeRequired)
+        logging.warn("status: %s", self.status)
+        logging.warn("printing status: %s", self.storeRequired 
+                     and (self.status == self.accepted or
+                          self.status == self.succeeded or
+                          self.status == self.failed or
+                          (self.spawned and self.status != self.succeeded))
+        )
 
         # print status
         if self.storeRequired and (self.status == self.accepted or
-                                   #self.status == self.succeeded or
+                                   self.status == self.succeeded or
                                    self.status == self.failed or
                                    (self.spawned and self.status != self.succeeded)):
+            if targets is None:
+                targets = [self.outputFile]
             pywps.response.response(self.response,
-                                    self.outputFile,
+                                    targets,
                                     self.wps.parser.soapVersion,
                                     self.wps.parser.isSoap,
                                     self.wps.parser.isSoapExecute,
@@ -1100,10 +1116,10 @@ class Execute(Request):
 
             except Exception,e:
                 self.cleanEnv()
+                logging.exception("output failed")
                 traceback.print_exc(file=pywps.logFile)
                 raise pywps.NoApplicableCode(
                         "Process executed. Failed to build final response for output [%s]: %s" % (identifier,e))
-        logging.info('template outputs %s', templateOutputs)
         self.templateProcessor.set("Outputs",templateOutputs)
 
     def _literalOutput(self, output, literalOutput):
@@ -1191,6 +1207,8 @@ class Execute(Request):
         # Check if ftp or file storage is set in the configfile
         if string.find(outputPath.lower(), "ftp://", 0, 6) == 0:
             outputType = "ftp"
+        if output.value.lower().startswith('http://') or output.value.lower().startswith('https://'):
+            outputType = "http"
 
         # search for ftp identifier in string in outputPath and get the ftp login and password
         # TODO: Check if login or password are set, in case they are empty, anonymous is
@@ -1212,6 +1230,9 @@ class Execute(Request):
 
             # copy the file to output directory or send it to an ftp server
             # literal value
+
+
+        logging.warn('outputType: %s', outputType)
         #str: BoundingBoxValue
         #ATTENTION to the FTP code
         if output.type == "LiteralValue" or output.type== "BoundingBoxValue":
@@ -1262,16 +1283,22 @@ class Execute(Request):
                     self._storeFileOnFTPServer(os.path.abspath(output.value), outName + outSuffix, ftpURL, ftpPort,ftpLogin, ftpPasswd)
                     #data sent to FTP and stored in the local output
                     COPY(os.path.abspath(output.value), outFile)
+                elif outputType == "http":
+                    # no need top copy, it's already on the internet
+                    pass
                 elif not self._samefile(output.value,outFile):
                     COPY(os.path.abspath(output.value), outFile)
 
                 #If ftp then the path to file is the outputpath otherwise it has to be the outputURL
                 if outputType == "ftp":
                     templateOutput["reference"] = escape(config.getConfigValue("server","outputPath")+"/"+outName)
+                elif outputType == 'http':
+                    templateOutput["reference"] = output.value
                 else:
                     templateOutput["reference"] = escape(config.getConfigValue("server","outputUrl")+"/"+outName)
 
-                output.value = outFile
+                if not outputType == 'http':
+                    output.value = outFile
 
                 # mapscript supported and the mapserver should be used for this
                 # output
@@ -1290,7 +1317,6 @@ class Execute(Request):
                 templateOutput["mimetype"] = output.format["mimetype"]
                 templateOutput["schema"] = output.format["schema"]
                 templateOutput["encoding"]=output.format["encoding"]
-
 
         return templateOutput
 
